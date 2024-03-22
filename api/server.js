@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 const port = process.env.PORT || 4000;
-let data = require("./public/data.json");
+let data = require("./data.json");
 
 module.exports = (req, res) => {
   res.json(data);
