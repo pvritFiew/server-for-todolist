@@ -1,27 +1,16 @@
-const express = require("express");
-const cors = require("cors");
+// server.js
+
 const fs = require("fs");
 const path = require("path");
 
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-const port = process.env.PORT || 4000;
 let data = require("./data.json");
 
-module.exports = (req, res) => {
+export const getEvents = (req, res) => {
   res.json(data);
 };
 
-// Get all events
-app.get("/api/events", (req, res) => {
-  res.json(data);
-});
-
-// Get event by id
-app.get("/api/events/:id", (req, res) => {
-  const eventId = parseInt(req.params.id);
+export const getEventById = (req, res) => {
+  const eventId = parseInt(req.query.id);
   const event = data
     .map((day) => day.events)
     .flat()
@@ -32,12 +21,13 @@ app.get("/api/events/:id", (req, res) => {
   } else {
     res.status(404).json({ message: `Event with id ${eventId} not found.` });
   }
-});
+};
 
-// Add a new event
-app.post("/api/events", (req, res) => {
+export const addEvent = (req, res) => {
   const newEvent = req.body;
-  newEvent.id = data.length + 1;
+  newEvent.id = data.reduce((maxId, day) => {
+    return Math.max(maxId, ...day.events.map((event) => event.id));
+  }, 0) + 1;
   newEvent.finish = 0;
   const existingDate = data.find((item) => item.days === newEvent.days);
   if (existingDate) {
@@ -47,10 +37,9 @@ app.post("/api/events", (req, res) => {
   }
   saveDataToFile(data);
   res.json(newEvent);
-});
+};
 
-// Update event
-app.put("/api/events/:id", (req, res) => {
+export const updateEvent = (req, res) => {
   const eventId = parseInt(req.params.id);
   const updatedEvent = req.body;
   let foundEvent = false;
@@ -68,12 +57,9 @@ app.put("/api/events/:id", (req, res) => {
   if (!foundEvent) {
     res.status(404).json({ message: `Event with id ${eventId} not found.` });
   }
-});
+};
 
-
-
-// Delete event by id
-app.delete("/api/events/:id", (req, res) => {
+export const deleteEvent = (req, res) => {
   const eventId = parseInt(req.params.id);
   let foundEvent = false;
 
@@ -90,18 +76,11 @@ app.delete("/api/events/:id", (req, res) => {
   if (!foundEvent) {
     res.status(404).json({ message: `Event with id ${eventId} not found.` });
   }
-});
+};
 
-
-
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
-
-//function to save what you doing on open web to file
 function saveDataToFile(data) {
   fs.writeFile(
-    path.join(__dirname, "public", "data.json"),
+    path.join(__dirname, "data.json"),
     JSON.stringify(data),
     (err) => {
       if (err) {
